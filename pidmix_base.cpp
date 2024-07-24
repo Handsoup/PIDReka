@@ -5,6 +5,7 @@ const int MAX6675_SCK = 13;
 const int MAX6675_SO = 12;
 // PWM pin for heating element
 int PWM_pin = 10;
+const int pwmPin2 = 5; // PWM pin connected to the 12V motor
 
 // Offset variables
 // Coefficients for the intervals
@@ -61,6 +62,8 @@ void setup() {
  Serial.println("offset:\n");
  Serial.println(offset);
  set_temperature = user_temperature + offset;
+ 
+ analogWrite(pwmPin2, 255); // stop cooling
 
  // Clear any remaining serial input
  while (Serial.available() > 0) {
