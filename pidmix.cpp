@@ -35,6 +35,7 @@ float elapsedTime, Time, timePrev;
 int PID_value = 0;
 float coolingTreshold = 10;
 
+float user_temperature = 0;
 // PID constants
 float kp = 9.1, ki = 0.3, kd = 1.8;
 float PID_p = 0, PID_i = 0, PID_d = 0;
@@ -174,6 +175,16 @@ void loop() {
  // Debugging motor status
  Serial.println("Cooling Motor ON");
 
+	// Print temperature values to Serial for plotting
+	 Serial.print("Set Temp: ");
+	 Serial.print(set_temperature - offset, 1);
+	 Serial.print(" C, ");
+	 Serial.print("Read Temp: ");
+	 Serial.print(temperature_read, 1);
+	 Serial.print(" C, ");
+	 Serial.print("PID Value: ");
+	 Serial.println(PID_value);
+	 
 
  }
  
