@@ -27,6 +27,7 @@ float previous_error = 0;
 float elapsedTime, Time, timePrev;
 float coolThreshold = 10;
 int PID_value = 0;
+int notRecooled = 1;
 // PID constants
 float kp = 9.1, ki = 0.3, kd = 1.8;
 float PID_p = 0, PID_i = 0, PID_d = 0;
@@ -117,17 +118,31 @@ void loop() {
 	 Serial.println("offset:\n");
 	 Serial.println(offset);
 	 set_temperature = user_temperature + offset;
-	
+	 notRecooled = 1;	
 
 	 // Clear any remaining serial input
 	 while (Serial.available() > 0) {
 	 Serial.read();
 	 }
 	 }
+	 float coolerOn = 0;
 	 // First, we read the real value of temperature
 	 temperature_read = readThermocouple();
-	 if (set_temperature >= temperature_read || temperature_read > set_temperature && temperature_read - set_temperature <= coolThreshold && temperature_read - set_temperature >= 0) {
+	 if (temperature_read > 28 && notRecooled) {
+		 analogWrite(pwmPin2,0);
+		 analogWrite(PWM_pin,0);
+		 coolerOn=1;
 
+	 }
+	else if (temperature_read <= 28 && coolerOn) {
+		 
+		 analogWrite(pwmPin2,255);
+		 coolerOn=0;
+		 notRecooled =0;
+	
+
+	}
+	if (coolerOn == 0 && notRecooled ==0 ) {
 		 analogWrite(pwmPin2,255);//cooling reset
 
 		 // Next, we calculate the error between the setpoint and the real value
@@ -158,13 +173,10 @@ void loop() {
 		 previous_error = PID_error; // Remember to store the previous error for the next loop
 		Serial.print(" heater on, cooler off");
 	}	
-	 else {
-		 analogWrite(PWM_pin,0);//stop heating
-		 analogWrite(pwmPin2,0);//start cooling
-		 Serial.print("heater off, cooler on");
-	 }
+	 
 
-	 // Print temperature values to Serial for plotting
+
+	// Print temperature values to Serial for plotting
 	 Serial.print("Set Temp: ");
 	 Serial.print(set_temperature - offset, 1);
 	 Serial.print(" C, ");
