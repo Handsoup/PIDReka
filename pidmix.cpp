@@ -127,7 +127,11 @@ void loop() {
 	 // First, we read the real value of temperature
 	 temperature_read = readThermocouple();
 	 if (set_temperature >= temperature_read || temperature_read > set_temperature && temperature_read - set_temperature <= coolThreshold && temperature_read - set_temperature >= 0) {
-
+	 }
+	 else {
+		 analogWrite(pwmPin2,0);//start cooling
+		 Serial.print("cooler on");
+	 }
 		 analogWrite(pwmPin2,255);//cooling reset
 
 		 // Next, we calculate the error between the setpoint and the real value
@@ -156,13 +160,9 @@ void loop() {
 		 // Now we can write the PWM signal to the MOSFET on digital pin D10
 		 analogWrite(PWM_pin, 255 - PID_value);
 		 previous_error = PID_error; // Remember to store the previous error for the next loop
-		Serial.print(" heater on, cooler off");
-	}	
-	 else {
-		 analogWrite(PWM_pin,0);//stop heating
-		 analogWrite(pwmPin2,0);//start cooling
-		 Serial.print("heater off, cooler on");
-	 }
+		Serial.print(" cooler off");
+		
+	
 
 	 // Print temperature values to Serial for plotting
 	 Serial.print("Set Temp: ");
