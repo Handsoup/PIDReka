@@ -1,4 +1,5 @@
 #include <SPI.h>
+#include "max6675.h"
 
 // MAX6675 pins
 const int MAX6675_CS = 8;
@@ -7,6 +8,11 @@ const int MAX6675_SO = 12;
 
 // PWM pin for heating element
 int PWM_pin = 10;
+
+//PWM for the cooler
+
+const int pwmPin2 = 5; // PWM pin connected to the 12V motor
+
 
 // Offset variables
 // Coefficients for the intervals
@@ -27,6 +33,7 @@ float PID_error = 0;
 float previous_error = 0;
 float elapsedTime, Time, timePrev;
 int PID_value = 0;
+float coolingTreshold = 10;
 
 // PID constants
 float kp = 9.1, ki = 0.3, kd = 1.8;
@@ -49,6 +56,7 @@ void setup() {
  pinMode(MAX6675_CS, OUTPUT);
  pinMode(MAX6675_SO, INPUT);
  pinMode(MAX6675_SCK, OUTPUT);
+ pinMode(pwmPin2, OUTPUT);
 
  digitalWrite(MAX6675_CS, HIGH);
 
@@ -93,58 +101,85 @@ void loop() {
  Serial.read();
  }
  }
+	
+ // adjusting the offset
+ offset = evaluateSpline(user_temperature);
+// Serial.println("offset:\n");
+ //Serial.println(offset);
+ set_temperature = user_temperature + offset;
 
+ 
  // First, we read the real value of temperature
  temperature_read = readThermocouple();
+ 
+ if (temperature_read < set_temperature + coolingTreshold) {
 
- // Next, we calculate the error between the setpoint and the real value
- PID_error = set_temperature - temperature_read;
+	// Next, we calculate the error between the setpoint and the real value
+	 PID_error = set_temperature - temperature_read;
 
- // Calculate the P value
- PID_p = kp * PID_error;
+	 // Calculate the P value
+	 PID_p = kp * PID_error;
 
- // Calculate the I value in a range on +-3
- if (-3 < PID_error && PID_error < 3) {
- PID_i = PID_i + (ki * PID_error);
+	 // Calculate the I value in a range on +-3
+	 if (-3 < PID_error && PID_error < 3) {
+	 PID_i = PID_i + (ki * PID_error);
+	 }
+
+	 // For derivative, we need real-time to calculate speed change rate
+	 timePrev = Time; // the previous time is stored before the actual time read
+	 Time = millis(); // actual time read
+	 elapsedTime = (Time - timePrev) / 1000.0;
+
+	 // Now we can calculate the D value
+	 PID_d = kd * ((PID_error - previous_error) / elapsedTime);
+
+	 // Final total PID value is the sum of P + I + D
+	 PID_value = PID_p + PID_i + PID_d;
+
+	 // We define PWM range between 0 and 255
+	 if (PID_value < 0) {
+	 PID_value = 0;
+	 }
+	 if (PID_value > 255) {
+	 PID_value = 255;
+	 }
+
+	 // Now we can write the PWM signal to the MOSFET on digital pin D10
+	 analogWrite(PWM_pin, 255 - PID_value);
+	 previous_error = PID_error; // Remember to store the previous error for the next loop
+
+	 // Print temperature values to Serial for plotting
+	 Serial.print("Set Temp: ");
+	 Serial.print(set_temperature - offset, 1);
+	 Serial.print(" C, ");
+	 Serial.print("Read Temp: ");
+	 Serial.print(temperature_read, 1);
+	 Serial.print(" C, ");
+	 Serial.print("PID Value: ");
+	 Serial.println(PID_value);
+	 
+
+
+
  }
+ else {
 
- // For derivative, we need real-time to calculate speed change rate
- timePrev = Time; // the previous time is stored before the actual time read
- Time = millis(); // actual time read
- elapsedTime = (Time - timePrev) / 1000.0;
+ // Turn on the cooling motor
+ analogWrite(pwmPin2, 128); // Full speed for cooling
+ analogWrite(PWM_pin, 0); // Turn off heating complately
+ // Debugging motor status
+ Serial.println("Cooling Motor ON");
 
- // Now we can calculate the D value
- PID_d = kd * ((PID_error - previous_error) / elapsedTime);
 
- // Final total PID value is the sum of P + I + D
- PID_value = PID_p + PID_i + PID_d;
-
- // We define PWM range between 0 and 255
- if (PID_value < 0) {
- PID_value = 0;
  }
- if (PID_value > 255) {
- PID_value = 255;
- }
-
- // Now we can write the PWM signal to the MOSFET on digital pin D10
- analogWrite(PWM_pin, 255 - PID_value);
- previous_error = PID_error; // Remember to store the previous error for the next loop
-
- // Print temperature values to Serial for plotting
- Serial.print("Set Temp: ");
- Serial.print(set_temperature - offset, 1);
- Serial.print(" C, ");
- Serial.print("Read Temp: ");
- Serial.print(temperature_read, 1);
- Serial.print(" C, ");
- Serial.print("PID Value: ");
- Serial.println(PID_value);
+ 
 
  // Delay to stabilize the loop
  delay(300);
 }
 
+
+// Function for reading the temperature sensor
 double readThermocouple() {
  uint16_t v;
 
