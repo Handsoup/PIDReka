@@ -165,7 +165,7 @@ void loop() {
  else {
 
  // Turn on the cooling motor
- analogWrite(pwmPin2, 128); // Full speed for cooling
+ analogWrite(pwmPin2, 0); // Full speed for cooling
  analogWrite(PWM_pin, 0); // Turn off heating complately
  // Debugging motor status
  Serial.println("Cooling Motor ON");
