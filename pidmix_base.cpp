@@ -44,7 +44,16 @@ float evaluateSpline(float x_val) {
 void setup() {
  pinMode(PWM_pin, OUTPUT);
  pinMode(MAX6675_CS, OUTPUT);
-@@ -41,6 +64,9 @@ void setup() {
+ pinMode(MAX6675_SO, INPUT);
+ pinMode(MAX6675_SCK, OUTPUT);
+ digitalWrite(MAX6675_CS, HIGH);
+ // Set PWM frequency for pin 10
+ TCCR1B = TCCR1B & B11111000 | 0x01; // Pin 10 PWM frequency of 31.37 kHz
+ // Initialize Serial communication
+ Serial.begin(9600);
+ // Ask the user for the desired temperature
+ Serial.println("Enter the desired temperature:");
+ while (!Serial.available()) {
  // Wait for user input
  }
  float user_temperature = Serial.parseFloat();
