@@ -8,6 +8,17 @@ const int MAX6675_SO = 12;
 // PWM pin for heating element
 int PWM_pin = 10;
 
+// Offset variables
+// Coefficients for the intervals
+float a[] = {6.6, 8.5, 8.5, 12.2, 14.0, 16.0, 18.0};
+float b_coef[] = {0.2712332531776024, 0.027533493644795598, 0.18863277224321534, 0.32793541738234283, 0.14962555822741333, 0.2135623497080041, 0.19612504294057026};
+float c[] = {-2.2204460492503132e-17, -0.024369975953280654, 0.04047990381312263, -0.02654963929920988, 0.008718653383716926, -0.002324974235657847, 0.0005812435589144619};
+float d[] = {-0.0008123325317760211, 0.0021616626588801097, -0.0022343181037444166, 0.0011756097560975602, -0.0003681209206458258, 9.687392648574364e-05, -1.9374785297148728e-05};
+
+float x[] = {30, 40, 50, 60, 70, 80, 90, 100};
+
+
+
 // Variables
 float temperature_read = 0.0;
 float offset = 20;
@@ -20,6 +31,18 @@ int PID_value = 0;
 // PID constants
 float kp = 9.1, ki = 0.3, kd = 1.8;
 float PID_p = 0, PID_i = 0, PID_d = 0;
+
+// Function to evaluate the spline
+float evaluateSpline(float x_val) {
+  int n = sizeof(a) / sizeof(a[0]);
+  for (int i = 0; i < n; i++) {
+    if (x_val >= x[i] && x_val <= x[i + 1]) {
+      float dx = x_val - x[i];
+      return a[i] + b_coef[i] * dx + c[i] * dx * dx + d[i] * dx * dx * dx;
+    }
+  }
+  return NAN; // x is out of the interpolation range
+}
 
 void setup() {
  pinMode(PWM_pin, OUTPUT);
@@ -41,6 +64,9 @@ void setup() {
  // Wait for user input
  }
  float user_temperature = Serial.parseFloat();
+ offset = evaluateSpline(user_temperature);
+ Serial.println("offset:\n");
+ Serial.println(offset);
  set_temperature = user_temperature + offset;
 
  // Clear any remaining serial input
