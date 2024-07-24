@@ -81,6 +81,7 @@ void setup() {
  while (Serial.available() > 0) {
  Serial.read();
  }
+ analogWrite(pwmPin2, 255); // stop cooling
 
  // Set the initial time
  Time = millis();
@@ -113,6 +114,9 @@ void loop() {
  temperature_read = readThermocouple();
  
  if (temperature_read < set_temperature + coolingTreshold) {
+	
+	analogWrite(pwmPin2, 255); // Stop cooling
+
 
 	// Next, we calculate the error between the setpoint and the real value
 	 PID_error = set_temperature - temperature_read;
