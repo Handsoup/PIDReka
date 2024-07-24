@@ -77,7 +77,12 @@ void loop() {
  // Wait for user input
  }
  float user_temperature = Serial.parseFloat();
+ offset = evaluateSpline(user_temperature);
+ Serial.println("offset:\n");
+ Serial.println(offset);
  set_temperature = user_temperature + offset;
+
+
  // Clear any remaining serial input
  while (Serial.available() > 0) {
  Serial.read();
